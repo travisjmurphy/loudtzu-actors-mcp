@@ -1,0 +1,42 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.travisjmurphy/loudtzu-actors-mcp",
+  "title": "LOUDTZU Canada Data & Price Tools",
+  "description": "9 tools: Canadian permits, companies, recalls, charities, funding and retail prices via Apify.",
+  "repository": {
+    "url": "https://github.com/travisjmurphy/loudtzu-actors-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "loudtzu-actors-mcp",
+      "version": "0.1.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "APIFY_TOKEN",
+          "description": "Your own Apify API token (console.apify.com > Settings > API & Integrations). Actor charges bill to this account.",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "MAX_CHARGE_USD",
+          "description": "Per-call cap on Actor charges in USD (default 1.00).",
+          "isRequired": false,
+          "format": "number",
+          "default": "1"
+        },
+        {
+          "name": "MAX_RETURN_ITEMS",
+          "description": "Max dataset items returned to the agent per call (default 200).",
+          "isRequired": false,
+          "format": "number",
+          "default": "200"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+node_modules/
+dist/
+*.tgz
+*.mcpb
+.env
+.env.*
+*.env
+*token*
+.npmrc
+# internal (not for the public repo)
+PLAN.md
+live-check-*.json
+scripts/live-check.mjs
+scripts/catalog.disabled.json
+rapidapi/
+test/worker.test.ts
+scripts/gen-rapidapi.mjs
+DIRECTORIES.md

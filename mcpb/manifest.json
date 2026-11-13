@@ -1,0 +1,98 @@
+{
+  "manifest_version": "0.3",
+  "name": "loudtzu-actors-mcp",
+  "display_name": "LOUDTZU Canada Data & Price Tools",
+  "version": "0.1.0",
+  "description": "9 tools: Canadian building permits, federal corporations, recalls, charities, funding programs and retail prices (Best Buy CA, Loblaw banners, any Shopify/WooCommerce store).",
+  "long_description": "Runs LOUDTZU's public Apify Actors with your own Apify API token. Each call is billed by Apify on your account at the Actor's pay-per-event price (shown in each tool description). A per-call cost cap (default $1) is applied. Not affiliated with or endorsed by Apify, Best Buy, Loblaw, Shopify, WooCommerce or any government body.",
+  "author": {
+    "name": "LOUDTZU"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/travisjmurphy/loudtzu-actors-mcp.git"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
+      "env": {
+        "APIFY_TOKEN": "${user_config.apify_token}",
+        "MAX_CHARGE_USD": "${user_config.max_charge_usd}"
+      }
+    }
+  },
+  "user_config": {
+    "apify_token": {
+      "type": "string",
+      "title": "Apify API token",
+      "description": "Your own token from console.apify.com > Settings > API & Integrations. Charges bill to this account.",
+      "sensitive": true,
+      "required": true
+    },
+    "max_charge_usd": {
+      "type": "number",
+      "title": "Max charge per call (USD)",
+      "description": "Hard cap on Actor charges for one tool call.",
+      "default": 1,
+      "required": false
+    }
+  },
+  "tools": [
+    {
+      "name": "canada_building_permits",
+      "description": "Canada Building Permits & Bid Signals (19 cities)"
+    },
+    {
+      "name": "loblaws_grocery_prices",
+      "description": "Loblaw-banner grocery prices (No Frills, Superstore, Loblaws...)"
+    },
+    {
+      "name": "canada_federal_corporations",
+      "description": "Canada federal corporations (Corporations Canada open data)"
+    },
+    {
+      "name": "shopify_store_products",
+      "description": "Shopify store product export"
+    },
+    {
+      "name": "woocommerce_store_products",
+      "description": "WooCommerce store product export"
+    },
+    {
+      "name": "canada_recalls",
+      "description": "Canada recalls & safety alerts (Health Canada, CFIA, Transport Canada)"
+    },
+    {
+      "name": "bestbuy_ca_product_search",
+      "description": "Best Buy Canada product prices"
+    },
+    {
+      "name": "canada_registered_charities",
+      "description": "Canadian registered charities (CRA open data)"
+    },
+    {
+      "name": "canada_business_funding_finder",
+      "description": "Canada small-business funding programs"
+    }
+  ],
+  "keywords": [
+    "canada",
+    "open-data",
+    "building-permits",
+    "price-comparison",
+    "shopify",
+    "woocommerce",
+    "apify"
+  ],
+  "license": "MIT",
+  "compatibility": {
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

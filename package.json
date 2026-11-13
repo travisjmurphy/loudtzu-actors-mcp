@@ -1,0 +1,54 @@
+{
+  "name": "loudtzu-actors-mcp",
+  "version": "0.1.0",
+  "description": "MCP server: 9 curated Canadian open-data and retail-price tools (LOUDTZU's Apify Actors), run with your own Apify token.",
+  "mcpName": "io.github.travisjmurphy/loudtzu-actors-mcp",
+  "type": "module",
+  "bin": {
+    "loudtzu-actors-mcp": "dist/index.js"
+  },
+  "main": "dist/server.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "gen": "node scripts/gen-actors.mjs",
+    "build": "rm -rf dist && tsc -p tsconfig.json && node -e \"require('fs').chmodSync('dist/index.js',0o755)\"",
+    "test": "vitest run",
+    "start": "node dist/index.js",
+    "prepack": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "apify",
+    "canada",
+    "open-data",
+    "building-permits",
+    "price-comparison",
+    "shopify",
+    "woocommerce",
+    "ai-agent"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/travisjmurphy/loudtzu-actors-mcp.git"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

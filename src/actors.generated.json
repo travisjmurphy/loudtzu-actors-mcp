@@ -1,0 +1,1026 @@
+[
+  {
+    "tool": "canada_building_permits",
+    "actor": "canada-building-permits",
+    "actorId": "kaIamVgvUdWIpjdH3",
+    "title": "Canada Building Permits & Bid Signals (19 cities)",
+    "price": "$0.003 per permit row",
+    "description": "Search issued building permits from 19 Canadian cities' official open data (including Toronto, Vancouver, Calgary, Edmonton, Winnipeg, Halifax, Mississauga, Kitchener, Waterloo, Victoria and Surrey), with optional Calgary/Edmonton planning and business-licence signals, federal contract awards and CanadaBuys open tenders. Filter by city or province, issue-date range, project value, permit type, work type, status and keyword. Use it to find construction leads, contractor and supplier prospects, or local development activity in Canada. Returns one clean JSON row per permit.",
+    "apifyInputSchema": {
+      "title": "Canada Building Permits & Business Signals - 19 Cities + 5 New Sources",
+      "type": "object",
+      "schemaVersion": 1,
+      "properties": {
+        "cities": {
+          "title": "Cities",
+          "type": "array",
+          "editor": "select",
+          "description": "Cities to query for building_permits when province is omitted. Setting province overrides this selection, including prefilled defaults. Opt-in calgary_* / edmonton_* sources are scoped by source selection: choosing them runs that feed even if this list omits the city, and does not add that city's building permits unless building_permits is also selected.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "halifax",
+              "kitchener",
+              "oakville",
+              "mississauga",
+              "burlington",
+              "waterloo",
+              "kingston",
+              "victoria",
+              "surrey",
+              "delta",
+              "maple-ridge",
+              "calgary",
+              "edmonton",
+              "red-deer",
+              "lethbridge",
+              "strathcona-county",
+              "toronto",
+              "vancouver",
+              "winnipeg"
+            ],
+            "enumTitles": [
+              "Halifax, NS",
+              "Kitchener, ON",
+              "Oakville, ON",
+              "Mississauga, ON",
+              "Burlington, ON",
+              "Waterloo, ON",
+              "Kingston, ON",
+              "Victoria, BC",
+              "Surrey, BC",
+              "Delta, BC",
+              "Maple Ridge, BC",
+              "Calgary, AB",
+              "Edmonton, AB",
+              "Red Deer, AB",
+              "Lethbridge, AB",
+              "Strathcona County, AB",
+              "Toronto, ON",
+              "Vancouver, BC",
+              "Winnipeg, MB"
+            ]
+          },
+          "prefill": [
+            "halifax",
+            "calgary",
+            "mississauga"
+          ],
+          "default": [
+            "halifax",
+            "calgary",
+            "mississauga"
+          ]
+        },
+        "dateFrom": {
+          "title": "Issued from (YYYY-MM-DD)",
+          "type": "string",
+          "editor": "datepicker",
+          "description": "Only permits issued on or after this date. Leave empty for no lower limit. Delta publishes no issue date, so for Delta this filters on the completion date (the log warns). Opt-in sources use their event_date; federal data is first filtered to federalFiscalYears and then this bound is applied locally within its scan cap."
+        },
+        "dateTo": {
+          "title": "Issued to (YYYY-MM-DD)",
+          "type": "string",
+          "editor": "datepicker",
+          "description": "Only permits issued on or before this date. For Delta this filters on the completion date."
+        },
+        "minValue": {
+          "title": "Minimum project value (CAD)",
+          "type": "integer",
+          "editor": "number",
+          "minimum": 0,
+          "description": "Only permits with an estimated construction value at or above this. Permits with no value recorded (blank or 0) are left out when you set a value filter. Delta and Winnipeg publish no value, so they are skipped when you set this."
+        },
+        "maxValue": {
+          "title": "Maximum project value (CAD)",
+          "type": "integer",
+          "editor": "number",
+          "minimum": 0,
+          "description": "Only permits with an estimated construction value at or below this. Permits with no value recorded (blank or 0) are left out. Delta and Winnipeg publish no value, so they are skipped when you set this."
+        },
+        "permitType": {
+          "title": "Permit type contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Text match (contains, not case-sensitive) on the city's permit type. The words differ by city: see the README table. 'Residential' matches nothing in Oakville, Burlington, Kingston, Victoria, Surrey and Edmonton."
+        },
+        "workType": {
+          "title": "Work type contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Text match on work type, e.g. New, Addition, Alteration. Halifax accepts exactly: New Building, Addition, Renovation. Kingston, Victoria and Delta have no work-type column and are skipped when you set this."
+        },
+        "status": {
+          "title": "Status contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Text match on permit status, e.g. Issued, Closed. Surrey and Edmonton have no status column and are skipped when you set this."
+        },
+        "keyword": {
+          "title": "Keyword",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Searches each city's permit number and type/description-like fields."
+        },
+        "maxItems": {
+          "title": "Max permits in total",
+          "type": "integer",
+          "editor": "number",
+          "minimum": 1,
+          "maximum": 50000,
+          "default": 100,
+          "prefill": 100,
+          "description": "Total permits across all cities (default 100, up to 50,000). Split evenly between the cities you pick; a city that has fewer matches passes its unused share on to the next cities. In opt-in source mode this caps all saved signal rows, including permits, with a fair share per city/source task."
+        },
+        "maxItemsPerCity": {
+          "title": "Max permits per city (optional)",
+          "type": "integer",
+          "editor": "number",
+          "minimum": 1,
+          "maximum": 50000,
+          "description": "Optional upper limit for each city, newest first. A city never gets more than this or its share of 'Max permits in total', whichever is smaller. In opt-in source mode, all source types in a city share this cap; national contracts have no inferred city."
+        },
+        "province": {
+          "title": "Province (optional)",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "AB",
+            "BC",
+            "ON",
+            "NS",
+            "MB"
+          ],
+          "enumTitles": [
+            "Alberta",
+            "British Columbia",
+            "Ontario",
+            "Nova Scotia",
+            "Manitoba"
+          ],
+          "description": "Query every covered municipality in this province. Overrides cities, including prefilled city defaults. Coverage is limited to the municipalities listed in the README."
+        },
+        "includeAddresses": {
+          "title": "Include project site addresses",
+          "type": "boolean",
+          "default": true,
+          "description": "When false, project_address is null for every row. Addresses are only available from reviewed, enabled sources; see city provenance."
+        },
+        "sources": {
+          "title": "Sources (0.3 beta, opt-in)",
+          "type": "array",
+          "editor": "select",
+          "prefill": [
+            "building_permits"
+          ],
+          "description": "Opt-in source list. Prefill is building_permits for the Console form; there is no schema default, so cloud runs that omit sources keep permits-only unless signals is set. When signals is set and sources is omitted (or only the building_permits prefill), every compatible enabled feed for those signal types is selected — including held diagnostics. Explicit extra sources enable 0.3 signal mode. Selecting calgary_* or edmonton_* runs that city feed even if cities omits the city; it does not auto-add that city's building permits. Nine enabled extra sources, including Halifax planning/subdivision and construction permits: Calgary/Edmonton planning and business licences, federal contract awards, and CanadaBuys open tenders (daily KV-cached CSV). ns_tender_awards adds monthly NS awarded tenders (not open bids), signal_type award; legacy ns_contract_awards remains retired. Federal award requests use current Canadian fiscal-year reports and contract rows C only, with a hard scan cap (100 raw rows) documented in README/SOURCE_DIAGNOSTICS. CanadaBuys open tenders download at most once per America/Halifax day into named KV store cbp-canadabuys-cache. Same saved-item price/event.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "building_permits",
+              "calgary_development",
+              "calgary_business_licences",
+              "edmonton_development",
+              "edmonton_business_licences",
+              "federal_contract_awards",
+              "canadabuys_open_tenders",
+              "halifax_planning",
+              "halifax_construction_permits",
+              "ns_tender_awards"
+            ]
+          }
+        },
+        "federalFiscalYears": {
+          "title": "Federal reporting fiscal years (optional)",
+          "type": "array",
+          "editor": "stringList",
+          "items": {
+            "type": "string"
+          },
+          "description": "Federal contracts only. Omit for the current Canadian fiscal year (April–March), e.g. 2026-2027. Optionally select 1–3 consecutive-year labels such as [\"2026-2027\", \"2025-2026\"]. These filter reporting periods, not award dates; declared contracts C only. Results sort by contract_date descending WITHIN the hard scan cap (100 raw rows, 50/page, Crawl-delay 20s), not globally newest. dateFrom/dateTo/keyword/minValue/maxValue further filter event dates locally inside that cap; no automatic fallback to historical fiscal years. CKAN full-text q is unavailable on this resource."
+        },
+        "signals": {
+          "title": "Signal types (opt-in)",
+          "type": "array",
+          "editor": "select",
+          "items": {
+            "type": "string",
+            "enum": [
+              "permit",
+              "business_licence",
+              "planning_application",
+              "tender_open",
+              "contract_award",
+              "award"
+            ]
+          },
+          "description": "Optional nonempty type filter. Supplying this opts into common lead records, even for permits. With explicit sources (beyond the building_permits prefill alone), uses their intersection; without sources, selects every compatible feed (held feeds return diagnostics). Default permits-only output stays unchanged when signals is omitted and no extra sources are selected. tender_open selects canadabuys_open_tenders (federal open notices only; no provincial tenders). award selects ns_tender_awards (NS historical awarded public tenders); contract_award retains the existing federal source."
+        },
+        "closingAfter": {
+          "title": "Tender closes after (YYYY-MM-DD)",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Strict YYYY-MM-DD lower bound for open-tender closing_date. Default when omitted: today in America/Halifax. Only future calendar days match — same-day deadlines are excluded even if the clock is still before the hour. Applies only to tender_open / canadabuys_open_tenders rows."
+        },
+        "refreshCanadaBuysCache": {
+          "title": "Refresh CanadaBuys tender cache",
+          "type": "boolean",
+          "description": "When true, force a fresh download of the CanadaBuys open-tenders CSV and overwrite today's entry in the named KV store cbp-canadabuys-cache (America/Halifax date key). Default false uses the daily cache when present. Useful for measuring cache-miss cost.",
+          "default": false,
+          "editor": "checkbox"
+        }
+      }
+    }
+  },
+  {
+    "tool": "loblaws_grocery_prices",
+    "actor": "loblaws-grocery-prices",
+    "actorId": "i1j4kgymCd05vopQd",
+    "title": "Loblaw-banner grocery prices (No Frills, Superstore, Loblaws...)",
+    "price": "$0.0005 per product",
+    "description": "Search grocery products by keyword across the 14 Loblaw banners (Loblaws, No Frills, Real Canadian Superstore, Maxi, Zehrs and others) at a chosen store, postal code or city. Returns price, sale and unit price, deals, PC Optimum points when offered, and stock. Use it for Canadian grocery price comparison, meal-cost estimates or deal tracking. 'keywords' is required.",
+    "apifyInputSchema": {
+      "title": "Loblaw banners grocery prices",
+      "type": "object",
+      "schemaVersion": 1,
+      "properties": {
+        "keywords": {
+          "title": "Search terms",
+          "type": "array",
+          "editor": "stringList",
+          "description": "Products to search for, e.g. milk, eggs, bread.",
+          "prefill": [
+            "milk",
+            "eggs"
+          ]
+        },
+        "banner": {
+          "title": "Store banner",
+          "type": "string",
+          "editor": "select",
+          "default": "loblaw",
+          "enum": [
+            "loblaw",
+            "nofrills",
+            "superstore",
+            "rass",
+            "dominion",
+            "independent",
+            "extrafoods",
+            "maxi",
+            "provigo",
+            "wholesaleclub",
+            "valumart",
+            "zehrs",
+            "fortinos",
+            "independentcitymarket"
+          ],
+          "enumTitles": [
+            "Loblaws",
+            "No Frills",
+            "Real Canadian Superstore",
+            "Atlantic Superstore",
+            "Dominion (NL)",
+            "Your Independent Grocer",
+            "Extra Foods",
+            "Maxi",
+            "Provigo",
+            "Wholesale Club",
+            "Valu-mart",
+            "Zehrs",
+            "Fortinos",
+            "Independent City Market"
+          ],
+          "description": "Which Loblaw chain to search."
+        },
+        "storeId": {
+          "title": "Store number",
+          "type": "string",
+          "editor": "textfield",
+          "description": "4-digit store number (shown in the store page URL on the banner website). Prices and stock are for this store. Leave empty to use Postal code or City."
+        },
+        "postalCode": {
+          "title": "Postal code",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Used when Store number is empty: picks the store of this banner whose postal code matches yours most closely (same first letters). Not a distance search."
+        },
+        "city": {
+          "title": "City",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Used when Store number and Postal code are empty: picks a store of this banner in this city."
+        },
+        "language": {
+          "title": "Language",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "en",
+            "fr"
+          ],
+          "enumTitles": [
+            "English",
+            "French"
+          ],
+          "default": "en",
+          "description": "Language of names and descriptions."
+        },
+        "maxItems": {
+          "title": "Max products",
+          "type": "integer",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 50000,
+          "description": "Total products to save across all search terms (split evenly)."
+        },
+        "maxItemsPerQuery": {
+          "title": "Max products per search term",
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional fixed limit per search term. 0 = split Max products evenly."
+        },
+        "fetchAll": {
+          "title": "Fetch all results",
+          "type": "boolean",
+          "default": false,
+          "description": "Ignore Max products and save everything (up to 50,000)."
+        },
+        "skipSponsored": {
+          "title": "Skip sponsored products",
+          "type": "boolean",
+          "default": false,
+          "description": "Leave out products marked Sponsored (not charged)."
+        },
+        "proxyConfiguration": {
+          "title": "Proxy",
+          "type": "object",
+          "editor": "proxy",
+          "default": {
+            "useApifyProxy": true,
+            "apifyProxyGroups": [
+              "RESIDENTIAL"
+            ],
+            "apifyProxyCountry": "CA"
+          },
+          "prefill": {
+            "useApifyProxy": true,
+            "apifyProxyGroups": [
+              "RESIDENTIAL"
+            ],
+            "apifyProxyCountry": "CA"
+          },
+          "description": "Canadian residential proxy is the default."
+        }
+      },
+      "required": [
+        "keywords"
+      ]
+    }
+  },
+  {
+    "tool": "canada_federal_corporations",
+    "actor": "canada-federal-corporations",
+    "actorId": "yLTdoa3DBmxeZRH82",
+    "title": "Canada federal corporations (Corporations Canada open data)",
+    "price": "$0.003 per corporation",
+    "description": "Search federally incorporated Canadian corporations from the official Corporations Canada dataset on open.canada.ca (updated daily): corporation number, business number, names, governing act, status, incorporation date, last annual filing, city and province. Filter by province, active/inactive status, incorporation date range or name keyword. Use it for KYC-style lookups, new-company lead lists or market sizing. Street addresses are removed.",
+    "apifyInputSchema": {
+      "title": "Canada Federal Corporations input",
+      "type": "object",
+      "schemaVersion": 1,
+      "properties": {
+        "statusGroup": {
+          "title": "Active or inactive",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "active",
+            "inactive",
+            "all"
+          ],
+          "enumTitles": [
+            "Active only",
+            "Inactive / dissolved only",
+            "Both"
+          ],
+          "default": "active",
+          "description": "Which source files to read."
+        },
+        "includeNonCbca": {
+          "title": "Include non-CBCA corporations",
+          "type": "boolean",
+          "default": false,
+          "description": "Also include not-for-profits, boards of trade, co-operatives etc. (default: only Canada Business Corporations Act companies)."
+        },
+        "province": {
+          "title": "Province/territory",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "any",
+            "AB",
+            "BC",
+            "MB",
+            "NB",
+            "NL",
+            "NS",
+            "NT",
+            "NU",
+            "ON",
+            "PE",
+            "QC",
+            "SK",
+            "YT"
+          ],
+          "default": "any",
+          "description": "Province of the registered office."
+        },
+        "status": {
+          "title": "Status contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Case-insensitive match on status or status detail, e.g. 'Dissolved', 'Amalgamated', 'Dissolution Pending'."
+        },
+        "incorporatedFrom": {
+          "title": "Incorporated on/after (YYYY-MM-DD)",
+          "type": "string",
+          "editor": "textfield",
+          "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$",
+          "description": "Based on the anniversary (incorporation/amalgamation) date."
+        },
+        "incorporatedTo": {
+          "title": "Incorporated on/before (YYYY-MM-DD)",
+          "type": "string",
+          "editor": "textfield",
+          "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$",
+          "description": "Optional end date."
+        },
+        "nameKeyword": {
+          "title": "Name contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Case-insensitive match on the English or French corporate name."
+        },
+        "maxItems": {
+          "title": "Max corporations",
+          "type": "integer",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 50000,
+          "description": "Stop after this many matches (default 100, maximum 50,000)."
+        },
+        "fetchAll": {
+          "title": "Fetch all matches (up to 50,000)",
+          "type": "boolean",
+          "default": false,
+          "editor": "checkbox",
+          "description": "Ignore Max corporations and return every match, capped at 50,000 per run. Use filters to stay under the cap."
+        },
+        "flagIndividuals": {
+          "title": "Flag names that may be individuals",
+          "type": "boolean",
+          "default": true,
+          "editor": "checkbox",
+          "description": "Adds nameMayBeIndividual (true/false). True for professional corporations ('... Professional Corporation', 'Dr. ...', '... MD Inc.', '... Personal Real Estate Corporation') and names that start with (or, in French names, follow 'Gestion', 'Les Entreprises' etc. with) a given name and a surname, e.g. 'John Smith Holdings Inc.', 'Paige Thompson Photography Inc.'. Heuristic only."
+        },
+        "redactIndividuals": {
+          "title": "Blank names that may be individuals",
+          "type": "boolean",
+          "default": true,
+          "editor": "checkbox",
+          "description": "On by default. Replaces flagged corporate names (name and nameAlt) with '[redacted: may be an individual]' (about 2.7% of active corporations). The corporation number, business number and url are kept, so you can still look the record up. Turn off to get every name."
+        }
+      }
+    }
+  },
+  {
+    "tool": "shopify_store_products",
+    "actor": "shopify-store-products",
+    "actorId": "1rJybbUckeKtbWEMj",
+    "title": "Shopify store product export",
+    "price": "$0.0005 per run + $0.00019 per product",
+    "description": "Export every product from one or more Shopify stores (or a single collection) via the store's public products feed: title, vendor, type, tags, min/max price, compare-at price, sale percentage, stock, variants with SKUs, and images. Use it for competitor price monitoring, catalog research, dropshipping/product sourcing or sale detection on any Shopify shop.",
+    "apifyInputSchema": {
+      "title": "Shopify store products",
+      "type": "object",
+      "schemaVersion": 1,
+      "properties": {
+        "storeUrls": {
+          "title": "Store URLs",
+          "type": "array",
+          "editor": "stringList",
+          "prefill": [
+            "https://www.allbirds.com"
+          ],
+          "description": "One Shopify store per line, e.g. 'https://www.allbirds.com' or 'shop.example.com'. Add '/collections/<name>' to read just that collection. Empty lines stop the run before anything is charged. If you leave this out, the Actor reads allbirds.com."
+        },
+        "maxProductsPerStore": {
+          "title": "Max products per store",
+          "type": "integer",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 50000,
+          "description": "Stop after this many products from each store (default 100, max 50,000)."
+        },
+        "includeVariants": {
+          "title": "Include variants",
+          "type": "boolean",
+          "default": true,
+          "description": "Add a 'variants' list (size/colour, SKU, price, compare-at price, availability) to each product."
+        },
+        "includeDescription": {
+          "title": "Include description",
+          "type": "boolean",
+          "default": true,
+          "description": "Add the product description as plain text (emails and phone numbers removed)."
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "tool": "woocommerce_store_products",
+    "actor": "woocommerce-store-products",
+    "actorId": "tMqd9U4rFV2gz5RCx",
+    "title": "WooCommerce store product export",
+    "price": "$0.0005 per run + $0.00026 per product",
+    "description": "Export products from one or more WooCommerce shops through WooCommerce's public Store API: name, SKU, price, regular and sale price, currency, stock, rating, categories, attributes and images. Optional search term and sale-only filter. Use it for competitor price checks, catalog research or finding discounted items on WordPress/WooCommerce stores.",
+    "apifyInputSchema": {
+      "title": "WooCommerce store products",
+      "type": "object",
+      "schemaVersion": 1,
+      "properties": {
+        "storeUrls": {
+          "title": "Store URLs",
+          "type": "array",
+          "editor": "stringList",
+          "prefill": [
+            "https://mercantile.wordpress.org"
+          ],
+          "description": "One WooCommerce shop per line, e.g. 'https://shop.example.com'. Only the site address is used. Empty lines stop the run before anything is charged. If you leave this out, the Actor reads mercantile.wordpress.org (the official WordPress swag shop)."
+        },
+        "search": {
+          "title": "Search (optional)",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Only products matching this text, using the shop's own search."
+        },
+        "onSaleOnly": {
+          "title": "On sale only",
+          "type": "boolean",
+          "default": false,
+          "description": "Only products the shop marks as on sale."
+        },
+        "maxProductsPerStore": {
+          "title": "Max products per store",
+          "type": "integer",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 50000,
+          "description": "Stop after this many products from each shop (default 100, max 50,000)."
+        },
+        "includeDescription": {
+          "title": "Include descriptions",
+          "type": "boolean",
+          "default": true,
+          "description": "Add short and full descriptions as plain text (emails and phone numbers removed)."
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "tool": "canada_recalls",
+    "actor": "health-canada-recalls",
+    "actorId": "hIJuDQygJDbY3QOrx",
+    "title": "Canada recalls & safety alerts (Health Canada, CFIA, Transport Canada)",
+    "price": "$0.003 per recall notice",
+    "description": "Search Government of Canada recalls and safety alerts from official open data: food (CFIA), consumer products, health products, medical devices and vehicles. Filter by agency, category, recall class, issue, keyword and update-date range. Use it to check whether a product or brand was recalled in Canada, monitor new recalls, or support product-safety and compliance work.",
+    "apifyInputSchema": {
+      "title": "Recalls input",
+      "type": "object",
+      "schemaVersion": 1,
+      "properties": {
+        "language": {
+          "title": "Language",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "en",
+            "fr"
+          ],
+          "default": "en",
+          "description": "Source feed language."
+        },
+        "organization": {
+          "title": "Organization contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "e.g. CFIA, TC, Medical devices, Consumer product safety."
+        },
+        "category": {
+          "title": "Category contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "e.g. Food, Car, Household items."
+        },
+        "recallClass": {
+          "title": "Recall class contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "e.g. Class 1, Type II."
+        },
+        "issue": {
+          "title": "Issue contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "e.g. Listeria, Electrical."
+        },
+        "keyword": {
+          "title": "Title/product contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Case-insensitive."
+        },
+        "updatedFrom": {
+          "title": "Updated on/after",
+          "type": "string",
+          "editor": "textfield",
+          "description": "YYYY-MM-DD",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "updatedTo": {
+          "title": "Updated on/before",
+          "type": "string",
+          "editor": "textfield",
+          "description": "YYYY-MM-DD",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "includeArchived": {
+          "title": "Include archived",
+          "type": "boolean",
+          "default": false,
+          "description": "Archived notices are excluded by default."
+        },
+        "maxItems": {
+          "title": "Max results",
+          "type": "integer",
+          "editor": "number",
+          "default": 100,
+          "minimum": 1,
+          "description": "Newest first.",
+          "maximum": 50000
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "tool": "bestbuy_ca_product_search",
+    "actor": "bestbuy-ca-product-search",
+    "actorId": "86Yvmbd8jacJJfIr6",
+    "title": "Best Buy Canada product prices",
+    "price": "$0.0006 per product",
+    "description": "Search bestbuy.ca by keyword and get Canadian prices by province: CAD price, regular price, savings, sale end date, ratings, marketplace seller, online stock count and store pickup status. Use it for electronics price comparison in Canada, deal and sale tracking, or stock checks.",
+    "apifyInputSchema": {
+      "title": "Best Buy Canada products",
+      "type": "object",
+      "schemaVersion": 1,
+      "properties": {
+        "keywords": {
+          "title": "Search terms",
+          "type": "array",
+          "editor": "stringList",
+          "prefill": [
+            "laptop"
+          ],
+          "description": "Words to search on bestbuy.ca."
+        },
+        "province": {
+          "title": "Province",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "AB",
+            "BC",
+            "MB",
+            "NB",
+            "NL",
+            "NS",
+            "NT",
+            "NU",
+            "ON",
+            "PE",
+            "QC",
+            "SK",
+            "YT"
+          ],
+          "default": "ON",
+          "description": "Prices are shown for this province (regional pricing)."
+        },
+        "postalCode": {
+          "title": "Postal code for stock",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Used for the online stock and pickup lookup. Default M5G 2C3 (Toronto)."
+        },
+        "includeAvailability": {
+          "title": "Include stock",
+          "type": "boolean",
+          "default": true,
+          "description": "Add online stock status, units remaining online and pickup status (one extra request per 24 products, no extra charge)."
+        },
+        "sort": {
+          "title": "Sort",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "relevance",
+            "priceLow",
+            "priceHigh",
+            "rating",
+            "newest"
+          ],
+          "enumTitles": [
+            "Best match",
+            "Price: low to high",
+            "Price: high to low",
+            "Highest rated",
+            "Newest"
+          ],
+          "default": "relevance",
+          "description": "Result order."
+        },
+        "language": {
+          "title": "Language",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "en",
+            "fr"
+          ],
+          "enumTitles": [
+            "English",
+            "French"
+          ],
+          "default": "en",
+          "description": "Language of names and descriptions."
+        },
+        "skipMarketplace": {
+          "title": "Skip marketplace sellers",
+          "type": "boolean",
+          "default": false,
+          "description": "Leave out products sold by third-party marketplace sellers (not charged)."
+        },
+        "maxItems": {
+          "title": "Max products",
+          "type": "integer",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 50000,
+          "description": "Total products across all search terms (split evenly)."
+        },
+        "maxItemsPerQuery": {
+          "title": "Max products per search term",
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional fixed limit per search term. 0 = split evenly."
+        },
+        "fetchAll": {
+          "title": "Fetch all results",
+          "type": "boolean",
+          "default": false,
+          "description": "Ignore Max products and save everything (up to 50,000)."
+        },
+        "proxyConfiguration": {
+          "title": "Proxy",
+          "type": "object",
+          "editor": "proxy",
+          "default": {
+            "useApifyProxy": true,
+            "apifyProxyGroups": [
+              "RESIDENTIAL"
+            ],
+            "apifyProxyCountry": "CA"
+          },
+          "prefill": {
+            "useApifyProxy": true,
+            "apifyProxyGroups": [
+              "RESIDENTIAL"
+            ],
+            "apifyProxyCountry": "CA"
+          },
+          "description": "Canadian residential proxy is the default."
+        }
+      }
+    }
+  },
+  {
+    "tool": "canada_registered_charities",
+    "actor": "cra-charities",
+    "actorId": "H8sTkb8XVc8O2wpNf",
+    "title": "Canadian registered charities (CRA open data)",
+    "price": "$0.003 per charity",
+    "description": "Search Canada Revenue Agency registered charities (T3010 open data): business number, legal name, designation, category, city and province. Filter by filing year, province, city, designation, category code or keyword. Use it to verify a charity's registration, build non-profit prospect lists or research the charity sector. No directors or contact details.",
+    "apifyInputSchema": {
+      "title": "CRA charities input",
+      "type": "object",
+      "schemaVersion": 1,
+      "properties": {
+        "year": {
+          "title": "Data year",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "2024",
+            "2023"
+          ],
+          "default": "2024",
+          "description": "T3010 open-data release year."
+        },
+        "province": {
+          "title": "Province",
+          "type": "string",
+          "editor": "textfield",
+          "description": "2-letter code, e.g. NS."
+        },
+        "city": {
+          "title": "City contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Case-insensitive."
+        },
+        "designation": {
+          "title": "Designation",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ],
+          "enumTitles": [
+            "Public foundation",
+            "Private foundation",
+            "Charitable organization"
+          ],
+          "description": "Optional."
+        },
+        "categoryCode": {
+          "title": "Category code",
+          "type": "string",
+          "editor": "textfield",
+          "description": "CRA category code, e.g. 0140 (see CRA codes list)."
+        },
+        "keyword": {
+          "title": "Name contains",
+          "type": "string",
+          "editor": "textfield",
+          "description": "Matches legal or account name."
+        },
+        "maxItems": {
+          "title": "Max results",
+          "type": "integer",
+          "editor": "number",
+          "default": 100,
+          "minimum": 1,
+          "description": "Stop after this many rows.",
+          "maximum": 50000
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "tool": "canada_business_funding_finder",
+    "actor": "canada-business-funding-finder",
+    "actorId": "etYSNIerdLnzwDVc3",
+    "title": "Canada small-business funding programs",
+    "price": "$0.01 per program result",
+    "description": "Find Canadian small-business funding programs (federal, Atlantic Canada, Nova Scotia and youth programs) from a curated, source-verified dataset: grants, loans and support programs with amounts, deadlines, eligibility age range and sectors. Filter by province, program type, sector, intake status, deadline range, applicant age and keyword. Use it when a founder or agent asks 'what funding can my Canadian business get?'. Bundled data, no live scraping.",
+    "apifyInputSchema": {
+      "title": "Canada Business Funding Finder input",
+      "type": "object",
+      "schemaVersion": 1,
+      "properties": {
+        "provinces": {
+          "title": "Provinces",
+          "description": "2-letter codes, e.g. [\"NS\"]. Keeps national programs, Atlantic programs (for NS/NB/PE/NL) and Nova Scotia programs (for NS). Empty = all.",
+          "type": "array",
+          "editor": "stringList",
+          "default": []
+        },
+        "packages": {
+          "title": "Packages",
+          "description": "Any of federal, atlantic-ns, young-founder. Empty = all.",
+          "type": "array",
+          "editor": "stringList",
+          "default": []
+        },
+        "types": {
+          "title": "Types",
+          "description": "grant, loan, rebate, tax credit, support. Empty = all.",
+          "type": "array",
+          "editor": "stringList",
+          "default": []
+        },
+        "sectors": {
+          "title": "Sectors",
+          "description": "Sector tags, e.g. ai, technology, export. Empty = all.",
+          "type": "array",
+          "editor": "stringList",
+          "default": []
+        },
+        "intakeStatus": {
+          "title": "Intake status",
+          "description": "ongoing, seasonal, closed, unknown. Empty = all.",
+          "type": "array",
+          "editor": "stringList",
+          "default": []
+        },
+        "minVerificationLevel": {
+          "title": "Minimum verification level",
+          "description": "partial (default) hides unverified records. unverified = include all (unverified records are not charged).",
+          "type": "string",
+          "editor": "select",
+          "enum": [
+            "unverified",
+            "partial",
+            "verified"
+          ],
+          "default": "partial"
+        },
+        "amountStatus": {
+          "title": "Amount status",
+          "description": "published, no_published_cap, not_found. Empty = all.",
+          "type": "array",
+          "editor": "stringList",
+          "default": []
+        },
+        "ageMin": {
+          "title": "Applicant age from",
+          "description": "Drops programs whose confirmed age range ends below this. Programs with no stated range stay.",
+          "type": "integer",
+          "editor": "number",
+          "minimum": 0,
+          "maximum": 120
+        },
+        "ageMax": {
+          "title": "Applicant age to",
+          "description": "Drops programs whose confirmed age range starts above this.",
+          "type": "integer",
+          "editor": "number",
+          "minimum": 0,
+          "maximum": 120
+        },
+        "deadlineFrom": {
+          "title": "Deadline from",
+          "description": "YYYY-MM-DD. When a deadline range is set, only programs with a dated deadline in range are kept (see includeUndatedDeadlines).",
+          "type": "string",
+          "editor": "textfield"
+        },
+        "deadlineTo": {
+          "title": "Deadline to",
+          "description": "YYYY-MM-DD.",
+          "type": "string",
+          "editor": "textfield"
+        },
+        "includeUndatedDeadlines": {
+          "title": "Keep programs with no dated deadline",
+          "description": "Only used with a deadline range.",
+          "type": "boolean",
+          "default": false
+        },
+        "query": {
+          "title": "Keyword",
+          "description": "All words must appear in name, agency, summary, tip or sectors.",
+          "type": "string",
+          "editor": "textfield"
+        },
+        "maxItems": {
+          "title": "Max items",
+          "description": "Default 50. Hard cap 50,000. Each verified/partial record costs $0.01.",
+          "type": "integer",
+          "editor": "number",
+          "minimum": 1,
+          "maximum": 50000,
+          "default": 50
+        },
+        "fetchAll": {
+          "title": "Fetch all",
+          "description": "Opt-in: return every matching record (up to the 50,000 cap), ignoring maxItems.",
+          "type": "boolean",
+          "default": false
+        },
+        "includeTermsPendingSources": {
+          "title": "Include terms-pending sources",
+          "description": "Off by default. Adds NGen, Scale AI, Futurpreneur, Ulnooweg, Volta, BDC and Canada Media Fund records, whose terms are restrictive or not yet reviewed.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": []
+    }
+  }
+]
