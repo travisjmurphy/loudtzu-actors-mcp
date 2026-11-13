@@ -16,3 +16,4 @@ rapidapi/
 test/worker.test.ts
 scripts/gen-rapidapi.mjs
 DIRECTORIES.md
+.mcp-login.log
