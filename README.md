@@ -2,7 +2,7 @@
 
 <!-- mcp-name: io.github.travisjmurphy/loudtzu-actors-mcp -->
 
-An MCP server with **9 ready-described tools** for AI agents: Canadian building permits, federal corporations, recalls, registered charities, small-business funding programs, and retail prices (Best Buy Canada, Loblaw-banner grocery stores, any Shopify or WooCommerce store).
+An MCP server that gives AI agents issued building permits from 19 Canadian cities, plus federal corporations, government recalls, CRA registered charities, and small-business funding programs. It also includes retail price tools for Best Buy Canada, Loblaw-banner grocery stores, and any Shopify or WooCommerce store, for 9 tools in all.
 
 Each tool runs one of LOUDTZU's public [Apify](https://apify.com/loudtzu) Actors **on your own Apify account**, using your `APIFY_TOKEN`. You pay Apify directly at the Actor's pay-per-event price (listed below and in every tool description). This server adds no fee of its own.
 
