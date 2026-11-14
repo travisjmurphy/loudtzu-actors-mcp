@@ -65,13 +65,30 @@ x402-safe-wallet pay http://127.0.0.1:4021/paid
 # 4. Spend (real money): see "Going live" below
 ```
 
-<!-- TODO: fill after the first real Base Sepolia payment -->
-**Real Base Sepolia example:** _placeholder, to be filled in after the first testnet payment._
+**Real Base Sepolia example** (November 14, 2026, 3:19 PM AST; testnet USDC from the Circle faucet, no real value):
 
-```text
-receipt: <receiptId, status DELIVERED, amountUsd 0.01, http status/bytes/sha256>
-tx:      https://sepolia.basescan.org/tx/<settlement tx hash>
+```bash
+x402-safe-wallet config allow x402.org
+x402-safe-wallet pay https://x402.org/protected --max-usd 0.01
 ```
+
+```json
+{
+  "ok": true,
+  "paid": true,
+  "status": "DELIVERED",
+  "reason": null,
+  "receiptId": "r_mwgsijw2_96840c0b",
+  "amountUsd": 0.01,
+  "settlementTx": "0xc1dd3c242ab364c3a6b766c442fdda23da5a3b189b3b79728371d75f44d013a7",
+  "httpStatus": 200,
+  "bytes": 7978,
+  "body": "<7,978 bytes of HTML, omitted here>",
+  "next": null
+}
+```
+
+The settlement on the explorer: [0xc1dd3c24…d013a7](https://sepolia.basescan.org/tx/0xc1dd3c242ab364c3a6b766c442fdda23da5a3b189b3b79728371d75f44d013a7), a 0.01 USDC transfer from the test wallet `0x9615472E4906fcc8FC3f76C8A596265Fd3E1cf98` to the demo seller, submitted (and its gas paid) by the x402.org facilitator. The receipt log entry also records the response's SHA-256 and content type.
 
 Testnet faucets: [Circle USDC faucet](https://faucet.circle.com/) (Base Sepolia USDC) and the [Coinbase CDP faucet](https://portal.cdp.coinbase.com/products/faucet) (Base Sepolia ETH and USDC, sign-in required). Testnet tokens have no value. x402 payments are gasless for the buyer, so ETH is only needed for the kill switch.
 
