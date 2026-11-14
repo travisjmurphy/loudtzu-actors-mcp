@@ -62,6 +62,10 @@ Each call is `POST https://api.apify.com/v2/acts/loudtzu~<actor>/run-sync-get-da
 - Results come back inline as rows in one call. Apify's generic `call-actor` tool returns the run status and storage IDs, and a second call reads the dataset.
 - Agent-oriented descriptions with use cases and prices, cleaned JSON schemas, and a default $1 per-call cost cap.
 
+## Also in this repo: x402-safe-wallet
+
+[`x402-safe-wallet/`](x402-safe-wallet/) is a separate package and MCP server for bots that pay [x402](https://x402.org/) APIs in USDC. It starts on the Base Sepolia testnet and adds receipts, idempotency, fail-closed delivery checks, dispute packets and human-set caps. It is unaudited and experimental. See its [README](x402-safe-wallet/README.md).
+
 ## Development
 
 ```bash

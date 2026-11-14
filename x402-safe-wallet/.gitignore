@@ -1,0 +1,9 @@
+node_modules/
+*.tgz
+.env
+.env.*
+# wallet material must never be committed
+key.json
+*.key
+receipts.jsonl
+.x402-safe-wallet*/

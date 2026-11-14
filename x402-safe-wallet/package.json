@@ -1,0 +1,54 @@
+{
+  "name": "x402-safe-wallet",
+  "version": "0.1.0",
+  "description": "A dedicated, capped wallet for bots that pay x402 APIs: testnet first, receipts, idempotency, fail-closed delivery checks, dispute packets. CLI + MCP server.",
+  "mcpName": "io.github.travisjmurphy/x402-safe-wallet",
+  "type": "module",
+  "bin": {
+    "x402-safe-wallet": "bin/cli.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "examples",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "demo": "node bin/cli.mjs demo",
+    "mock-seller": "node examples/mock-seller.mjs",
+    "mcp": "node bin/cli.mjs mcp"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "x402",
+    "mcp",
+    "model-context-protocol",
+    "ai-agent",
+    "wallet",
+    "usdc",
+    "base",
+    "base-sepolia",
+    "spending-limit",
+    "receipts",
+    "idempotency"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/travisjmurphy/loudtzu-actors-mcp.git",
+    "directory": "x402-safe-wallet"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "viem": "^2.57.19",
+    "zod": "^4.6.7"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
