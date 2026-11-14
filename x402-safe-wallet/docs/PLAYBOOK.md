@@ -4,7 +4,7 @@
 
 This is the step-by-step path from nothing to a bot that pays x402 APIs inside human-set limits. Steps 1 to 7 use Base Sepolia, a testnet where tokens have no value. Step 8 is the only one that touches real money, and it is optional.
 
-Roles: the **bot** runs the tool (CLI or MCP). The **human** is the person responsible for the bot. Only the human funds the wallet, edits limits, resets breakers, unlocks mainnet and sweeps.
+Roles: the **bot** runs the tool (CLI or MCP). The **human** is the person responsible for the bot. Only the human should fund the wallet, edit limits, reset breakers, unlock mainnet and sweep. The tool enforces that for the MCP server, but not for a bot that also has shell access (see step 4).
 
 ---
 
@@ -56,6 +56,8 @@ x402-safe-wallet balances
 ## 4. Set the caps and the allowlist
 
 Defaults: no allowed hosts, $0.05 per call, $1 per rolling 24 hours, $5 lifetime, top-ups off.
+
+The human sets these, not the bot. The caps, the allowlist and the mainnet confirm phrase guard against mistakes; they are not a security boundary. Any bot or process with shell or file access can edit `config.json`. The MCP server's lock (it can't change limits, the network or the sweep) only helps when the bot has no shell access. The real limit is how much is in the wallet, so fund it with no more than the lifetime cap.
 
 ```bash
 x402-safe-wallet config allow x402.org
@@ -122,7 +124,7 @@ Only after steps 1 to 7 work on testnet:
 
 1. Create a **separate** wallet: `X402SW_HOME=~/.x402-safe-wallet-live x402-safe-wallet init --network base`.
 2. Unlock mainnet in that home: `config set confirmMainnet "I understand this spends real money"`.
-3. Fund it with **only** the lifetime cap in USDC on Base (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`), plus about $0.10 of ETH for the sweep.
+3. Fund it with **only** the lifetime cap in USDC on Base (USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`), plus about $0.10 of ETH for the sweep. The wallet balance is the only hard limit, because any process with shell access can edit the config caps.
 4. Set `sweepTo`, add sellers one by one, and keep the caps low.
 
 ---
@@ -139,14 +141,14 @@ What we saw while paying real x402 sellers on Base mainnet from our own capped c
 
 ### What goes wrong in the wild
 
-Public reports from outside x402 buyers, found by searching GitHub and X on November 14, 2026. They are summarized from the linked reports without judging anyone, and some were later followed up or resolved by the seller. The common thread is that **the payment settled, then delivery failed**, and retries or automatic top-ups sometimes charged again.
+Six public reports of x402 buyer-side failures, found by searching GitHub and X on November 14, 2026. Each item describes the problem only; follow the link for the full report and any later updates. The common pattern: **the payment settled, then delivery failed**, and in some cases retries or automatic top-ups charged again.
 
-1. **Retry loop with no delivery (February 2026).** A buyer's MCP tool with auto-approve retried an sBTC x402 payment 28 times (2,800 sats total) and no message was delivered. The integrator traced it to deduplication failing across retries. ([aibtc-mcp-server#141](https://github.com/aibtcdev/aibtc-mcp-server/issues/141), [x402-stacks-sdk#4](https://github.com/x402Stacks/x402-stacks-sdk/issues/4))
-2. **Inference paid, upstream quota error (February 2026).** A buyer's agent paid for inference in USDC, the payment went through, and the upstream model provider returned an insufficient-quota error. ([post on X](https://x.com/sp3akerstelios/status/2024533073165955582))
-3. **Domain paid, registration stuck (February 2026).** A $3.36 USDC payment on Base for a domain registration went through, and the registrar step failed for lack of account funds on the provider side, leaving the domain pending. ([post on X](https://x.com/glider_agent/status/2024697470593454506))
-4. **Phone top-up paid, carrier delivery failed (August 2026).** The x402 payment went through, and the top-up was flagged for a manual refund after a carrier-side failure. ([post on X](https://x.com/Okeesha_Vinula/status/2087526780580352471))
-5. **Credit top-up paid, credits not granted (September 2026).** A 5 USDC credit top-up settled on Base, and the credit-grant step returned HTTP 500, leaving the balance at zero credits. The reporter asked for credit or a refund. ([automaton#408](https://github.com/Conway-Research/automaton/issues/408))
-6. **Automatic top-up loop (October 2026).** A runtime's auto-top-up kept retrying while its account was in a low-funds state. Two 5 USDC top-ups settled and no credits were granted, and the runtime also swapped the wallet's ETH to USDC to fund them. ([automaton#427](https://github.com/Conway-Research/automaton/issues/427))
+1. **Retry loop with no delivery (February 2026).** An x402 payment in sBTC was retried 28 times (2,800 sats total) with auto-approve on, and no message was delivered. Deduplication did not hold across retries. ([aibtc-mcp-server#141](https://github.com/aibtcdev/aibtc-mcp-server/issues/141), [x402-stacks-sdk#4](https://github.com/x402Stacks/x402-stacks-sdk/issues/4))
+2. **Inference paid, upstream quota error (February 2026).** A USDC payment for inference settled, and the upstream model provider returned an insufficient-quota error, so no compute was delivered. ([post on X](https://x.com/sp3akerstelios/status/2024533073165955582))
+3. **Domain paid, registration stuck (February 2026).** A $3.36 USDC payment on Base for a domain registration settled, and the registrar step failed for lack of funds on the provider side, leaving the domain pending. ([post on X](https://x.com/glider_agent/status/2024697470593454506))
+4. **Phone top-up paid, carrier delivery failed (August 2026).** The x402 payment settled, and the top-up failed at the carrier and was flagged for a manual refund. ([post on X](https://x.com/Okeesha_Vinula/status/2087526780580352471))
+5. **Credit top-up paid, credits not granted (September 2026).** A 5 USDC credit top-up settled on Base, and the credit-grant step returned HTTP 500, leaving zero credits. ([automaton#408](https://github.com/Conway-Research/automaton/issues/408))
+6. **Automatic top-up loop (October 2026).** A runtime's auto-top-up kept retrying while the account was in a low-funds state. Two 5 USDC top-ups settled with no credits granted, and the wallet's ETH was swapped to USDC to fund them. ([automaton#427](https://github.com/Conway-Research/automaton/issues/427))
 
 How this tool responds: one signed attempt and no retries (cases 1 and 6), a delivery check and `PAID_NOT_DELIVERED` with a breaker (cases 2 to 5), a dispute packet for the refund request (cases 2 to 5), and the top-up guard with its own allowlist and daily cap (cases 5 and 6). It never swaps tokens.
 

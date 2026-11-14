@@ -65,6 +65,14 @@ x402-safe-wallet pay http://127.0.0.1:4021/paid
 # 4. Spend (real money): see "Going live" below
 ```
 
+<!-- TODO: fill after the first real Base Sepolia payment -->
+**Real Base Sepolia example:** _placeholder, to be filled in after the first testnet payment._
+
+```text
+receipt: <receiptId, status DELIVERED, amountUsd 0.01, http status/bytes/sha256>
+tx:      https://sepolia.basescan.org/tx/<settlement tx hash>
+```
+
 Testnet faucets: [Circle USDC faucet](https://faucet.circle.com/) (Base Sepolia USDC) and the [Coinbase CDP faucet](https://portal.cdp.coinbase.com/products/faucet) (Base Sepolia ETH and USDC, sign-in required). Testnet tokens have no value. x402 payments are gasless for the buyer, so ETH is only needed for the kill switch.
 
 ### MCP server
@@ -114,7 +122,9 @@ Use a **separate, fresh wallet** for mainnet (for example `X402SW_HOME=~/.x402-s
 
 ## Safety model
 
-Every limit is enforced in code, before anything is signed. A prompt cannot raise them.
+Every limit is enforced in code, before anything is signed. A prompt cannot raise them, but anything that can write files can (see below).
+
+**Caps guard against mistakes, not attackers.** The config caps, the allowlist and the mainnet confirm phrase protect against mistakes: a typo, a looping bot, a seller that overcharges. They are not a security boundary. Any bot or process with shell or file access to this machine can edit `config.json` and raise them. The MCP server's lock (it can't change limits, the network or the sweep address) only helps when the bot has no shell access. The real limit is how much is in the wallet. So the human should set the caps themselves, and fund the wallet with no more than the lifetime cap.
 
 | Setting (`config.json`) | Default | Notes |
 |---|---|---|
