@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.travisjmurphy/x402-safe-wallet",
+  "title": "x402 Safe Wallet",
+  "description": "Testnet-first capped wallet for bots paying x402 APIs: receipts, idempotency, fail-closed checks.",
+  "repository": {
+    "url": "https://github.com/travisjmurphy/loudtzu-actors-mcp",
+    "source": "github",
+    "subfolder": "x402-safe-wallet"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "x402-safe-wallet",
+      "version": "0.1.0",
+      "transport": { "type": "stdio" },
+      "packageArguments": [
+        { "type": "positional", "value": "mcp" }
+      ],
+      "environmentVariables": [
+        {
+          "name": "X402SW_HOME",
+          "description": "Private directory for the wallet key, config and receipts (default ~/.x402-safe-wallet). Created with mode 700.",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "X402SW_PRIVATE_KEY",
+          "description": "Optional: key of a DEDICATED wallet holding only what you can lose. If unset, the key file in X402SW_HOME is used.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
