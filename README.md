@@ -2,11 +2,75 @@
 
 <!-- mcp-name: io.github.travisjmurphy/loudtzu-actors-mcp -->
 
-An MCP server that gives AI agents issued building permits from 19 Canadian cities, plus federal corporations, government recalls, CRA registered charities, and small-business funding programs. It also includes retail price tools for Best Buy Canada, Loblaw-banner grocery stores, and any Shopify or WooCommerce store, for 9 tools in all.
+[![CI](https://github.com/travisjmurphy/loudtzu-actors-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/travisjmurphy/loudtzu-actors-mcp/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/loudtzu-actors-mcp)](https://www.npmjs.com/package/loudtzu-actors-mcp)
 
-Each tool runs one of LOUDTZU's public [Apify](https://apify.com/loudtzu) Actors **on your own Apify account**, using your `APIFY_TOKEN`. You pay Apify directly at the Actor's pay-per-event price (listed below and in every tool description). This server adds no fee of its own.
+An MCP server that gives AI agents 9 Canadian open-data and retail-price tools, run on your own Apify account.
+
+## What it does
+
+The server exposes issued building permits from 19 Canadian cities, federal corporations, government recalls, CRA registered charities, and small-business funding programs. It also includes retail price tools for Best Buy Canada, Loblaw-banner grocery stores, and any Shopify or WooCommerce store.
+
+Each tool runs one of the public [Apify](https://apify.com/loudtzu) Actors **on your own Apify account**, using your `APIFY_TOKEN`. You pay Apify directly at the Actor's pay-per-event price (listed below and in every tool description). This server adds no fee of its own.
+
+[npm package](https://www.npmjs.com/package/loudtzu-actors-mcp) · [MCP Registry](https://registry.modelcontextprotocol.io/?q=io.github.travisjmurphy/loudtzu-actors-mcp)
 
 > Not affiliated with or endorsed by Apify, Best Buy, Loblaw Companies, Shopify, WooCommerce/Automattic, or any government body. Government data comes from official open-data portals under their open licences.
+
+## Install
+
+You need Node.js 18+ and an Apify API token (Console → Settings → API & Integrations).
+
+The same server block works in Claude Desktop, Cursor, and any other MCP client that can launch a local stdio server with `npx`.
+
+```json
+{
+  "mcpServers": {
+    "loudtzu": {
+      "command": "npx",
+      "args": ["-y", "loudtzu-actors-mcp"],
+      "env": {
+        "APIFY_TOKEN": "<your Apify token>",
+        "MAX_CHARGE_USD": "1"
+      }
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+Paste that block into `claude_desktop_config.json`, then fully quit and restart Claude Desktop.
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+You can also open the file from Settings → Developer → Edit Config.
+
+### Cursor
+
+Paste the same block into one of these files, then reload the MCP server (or restart Cursor):
+
+- All projects: `~/.cursor/mcp.json`
+- This project only: `.cursor/mcp.json`
+
+### npx
+
+```bash
+export APIFY_TOKEN="your-apify-token"
+npx -y loudtzu-actors-mcp
+```
+
+The server speaks MCP over stdio, so you will usually let Claude Desktop or Cursor launch it rather than running this yourself.
+
+Docker: `docker build -t loudtzu-actors-mcp . && docker run -i --rm -e APIFY_TOKEN=... loudtzu-actors-mcp`
+
+| Env var | Default | Meaning |
+|---|---|---|
+| `APIFY_TOKEN` | (required) | Your Apify token. Charges bill to this account. |
+| `MAX_CHARGE_USD` | `1` | Per-call cap on Actor charges, sent to Apify as `maxTotalChargeUsd`. |
+| `MAX_RETURN_ITEMS` | `200` | Max rows returned to the agent per call (the full count is reported). |
 
 ## Tools
 
@@ -26,29 +90,58 @@ Prices were read from the Apify Store on Nov 11, 2026 and can change; the Actor'
 
 Each tool's input schema is generated from the Actor's own input schema, so filters and limits match the Store version. Every tool also accepts an optional `runOptions` object: `maxTotalChargeUsd` (a hard cost cap for that call) and `timeoutSecs`.
 
-## Install
+## Example
 
-You need Node.js 18+ and an Apify account with an API token (Console > Settings > API & Integrations).
+![Example session: list tools, then call canada_recalls for two notices](docs/demo.gif)
+
+Call `canada_recalls` for two recent notices:
 
 ```json
 {
-  "mcpServers": {
-    "loudtzu": {
-      "command": "npx",
-      "args": ["-y", "loudtzu-actors-mcp"],
-      "env": { "APIFY_TOKEN": "<your Apify token>", "MAX_CHARGE_USD": "1" }
-    }
+  "name": "canada_recalls",
+  "arguments": {
+    "maxItems": 2
   }
 }
 ```
 
-Docker: `docker build -t loudtzu-actors-mcp . && docker run -i --rm -e APIFY_TOKEN=... loudtzu-actors-mcp`
+The server returns JSON in this shape (items shortened from Government of Canada open data):
 
-| Env var | Default | Meaning |
-|---|---|---|
-| `APIFY_TOKEN` | (required) | Your Apify token. Charges bill to this account. |
-| `MAX_CHARGE_USD` | `1` | Per-call cap on Actor charges, sent to Apify as `maxTotalChargeUsd`. |
-| `MAX_RETURN_ITEMS` | `200` | Max rows returned to the agent per call (the full count is reported). |
+```json
+{
+  "actor": "loudtzu/health-canada-recalls",
+  "itemCount": 2,
+  "returned": 2,
+  "truncated": false,
+  "maxTotalChargeUsd": 1,
+  "items": [
+    {
+      "id": "82779",
+      "title": "Various brands of organic cheeses recalled due to Listeria monocytogenes",
+      "url": "https://recalls-rappels.canada.ca/en/alert-recall/various-brands-organic-cheeses-recalled-due-listeria-monocytogenes",
+      "organization": "CFIA",
+      "product": "Various organic cheeses",
+      "issue": "Listeria",
+      "category": "Dairy",
+      "recallClass": "Class 1",
+      "lastUpdated": "2026-10-14"
+    },
+    {
+      "id": "82762",
+      "title": "Redpath brand Medium Sugar recalled due to pieces of metal",
+      "url": "https://recalls-rappels.canada.ca/en/alert-recall/redpath-brand-medium-sugar-recalled-due-to-pieces-metal",
+      "organization": "CFIA",
+      "product": "Medium Sugar",
+      "issue": "Extraneous Material",
+      "category": "Candy, confectionary, snacks and sweeteners",
+      "recallClass": "Class 2",
+      "lastUpdated": "2026-10-09"
+    }
+  ]
+}
+```
+
+Contains information licensed under the [Open Government Licence – Canada](https://open.canada.ca/en/open-government-licence-canada). Source: [Recalls and Safety Alerts](https://recalls-rappels.canada.ca/), Government of Canada.
 
 ## How it works
 
@@ -70,7 +163,7 @@ Each call is `POST https://api.apify.com/v2/acts/loudtzu~<actor>/run-sync-get-da
 
 ```bash
 npm install
-npm test          # mocked fetch only; no live Apify calls
+npm test          # unit tests only; mocked fetch, no live Apify calls, no token needed
 npm run build
 npm run gen       # refresh src/actors.generated.json from the Actors' input_schema.json files
 ```
