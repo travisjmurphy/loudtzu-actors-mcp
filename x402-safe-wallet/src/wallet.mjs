@@ -122,6 +122,13 @@ export class SafeWallet {
     return { res, init, text: await res.text() };
   }
 
+  // First unpaid request only: if the seller answers 5xx, retry the unpaid probe exactly once. Never used after signing.
+  async _probeUnpaid(ctx) {
+    const first = await this._probe(ctx);
+    if (first.res.status < 500 || first.res.status > 599) return first;
+    return this._probe(ctx);
+  }
+
   _capCheck(base, chosen, args) {
     const c = this.cfg; const usd = chosen.amountUsd;
     const perCall = Math.min(base.topup ? c.topups.maxPerCallUsd : c.maxPerCallUsd, args.maxUsd ?? Infinity);
@@ -139,7 +146,7 @@ export class SafeWallet {
   async quote(args) {
     const pre = this._precheck(args);
     if (pre.refusal) return pre.refusal;
-    let probe; try { probe = await this._probe(pre); } catch (e) { return { ok: false, status: 'PROBE_FAILED', reason: String(e.message || e) }; }
+    let probe; try { probe = await this._probeUnpaid(pre); } catch (e) { return { ok: false, status: 'PROBE_FAILED', reason: String(e.message || e) }; }
     if (probe.res.status !== 402) return { ok: true, paymentRequired: false, httpStatus: probe.res.status, note: 'no payment asked for' };
     let pr; try { pr = parsePaymentRequired(probe.res.headers, probe.text); } catch (e) { return { ok: false, status: 'BAD_402', reason: e.message }; }
     const { classified, chosen } = chooseOption(pr, this.net);
@@ -154,7 +161,7 @@ export class SafeWallet {
     const pre = this._precheck(args);
     if (pre.refusal) return pre.refusal;
     const { base } = pre;
-    let probe; try { probe = await this._probe(pre); } catch (e) { return this._refuse(base, 'PROBE_FAILED', `unpaid probe failed: ${e.message}`); }
+    let probe; try { probe = await this._probeUnpaid(pre); } catch (e) { return this._refuse(base, 'PROBE_FAILED', `unpaid probe failed: ${e.message}`); }
     if (probe.res.status !== 402) return { ok: probe.res.ok, paid: false, httpStatus: probe.res.status, body: probe.text.slice(0, this.cfg.maxResponseBytes), note: 'no payment was asked for, so nothing was paid' };
     let pr; try { pr = parsePaymentRequired(probe.res.headers, probe.text); } catch (e) { return this._refuse(base, 'BAD_402', e.message); }
     const desc = `${pr.resource?.url || ''} ${pr.resource?.description || ''}`;

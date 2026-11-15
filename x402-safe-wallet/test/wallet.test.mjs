@@ -97,6 +97,25 @@ test('HTTP 500 after settlement is PAID_NOT_DELIVERED and gets a dispute packet'
   assert.equal(packet.settlementTx, 'simulated-no-chain');
 });
 
+test('unpaid 5xx is retried once, then a 402 is paid', async () => {
+  const w = wallet();
+  const before = seller.calls.requests;
+  const r = await w.pay({ url: `${base}/flaky` });
+  assert.equal(r.status, 'DELIVERED');
+  assert.equal(r.ok, true);
+  assert.match(r.body, /ok after unpaid retry/);
+  assert.equal(seller.calls.requests - before, 3, 'unpaid 5xx + unpaid 402 retry + one signed call');
+});
+
+test('a 5xx after signing is not retried', async () => {
+  const w = wallet();
+  const before = seller.calls.requests;
+  const r = await w.pay({ url: `${base}/error` });
+  assert.equal(r.status, 'PAID_NOT_DELIVERED');
+  assert.equal(r.paid, true);
+  assert.equal(seller.calls.requests - before, 2, 'one unpaid probe + one signed call, never a retry after signing');
+});
+
 test('seller rejection (402 after signing) is REJECTED_UNPAID and is not retried', async () => {
   const w = wallet();
   const before = seller.calls.requests;

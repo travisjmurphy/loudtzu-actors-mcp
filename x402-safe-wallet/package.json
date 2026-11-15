@@ -1,6 +1,6 @@
 {
   "name": "x402-safe-wallet",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A dedicated, capped wallet for bots that pay x402 APIs: testnet first, receipts, idempotency, fail-closed delivery checks, dispute packets. CLI + MCP server.",
   "mcpName": "io.github.travisjmurphy/x402-safe-wallet",
   "type": "module",

@@ -16,6 +16,7 @@ Onboard
   fund                     show the funding step for the human (address, amount, network, faucets)
   balances [--token 0x..]  ETH, USDC and any other ERC-20 you name
 Test and build
+  try                      one-shot Base Sepolia demo: init if needed, pay the public x402.org demo, print the tx hash
   demo                     offline demo against the bundled mock seller (no funds, no chain)
   quote <url>              dry run: what the seller offers and what would be chosen (never signs)
   pay <url>                guarded payment (testnet unless the human enabled mainnet)
@@ -65,11 +66,72 @@ function fundingGuide(cfg, address) {
   return lines.join('\n');
 }
 
+async function runTry() {
+  const h = home();
+  if (!fs.existsSync(path.join(h, 'config.json'))) saveConfig(h, { ...DEFAULTS });
+  const cfg = loadConfig(h);
+  const net = getNetwork(cfg.network);
+  if (!net.testnet) {
+    throw new Error('try is Base Sepolia (testnet) only and will not run against mainnet. Use a separate testnet home (X402SW_HOME or --home) if this one is set to base.');
+  }
+  let address = readAddress(cfg);
+  if (!address) {
+    address = createWallet(cfg.keyFile);
+    out(`Created a fresh dedicated wallet in ${h}\n  key file ${cfg.keyFile} (mode 600, directory mode 700, .gitignore '*')`);
+    const proof = await proveControl(loadAccount(cfg));
+    fs.writeFileSync(path.join(h, 'control-proof.json'), JSON.stringify(proof, null, 2), { mode: 0o600 });
+    out(`Control proof: signed and verified a message with this key (${proof.valid ? 'VALID' : 'INVALID'}). Saved to control-proof.json.`);
+  } else {
+    out(`Using the existing wallet in ${h}: ${address}`);
+  }
+  // Allow the public demo for this call only. Never write it to the saved allowlist.
+  const liveCfg = { ...cfg, allowHosts: [...new Set([...cfg.allowHosts, 'x402.org'])] };
+  const w = new SafeWallet({ home: h, config: liveCfg });
+  const price = 0.01;
+  let bal;
+  try { bal = await w.usdcBalance(); } catch (e) {
+    throw new Error(`could not read USDC balance, failing closed: ${e.message}`);
+  }
+  if (bal < price) {
+    out(`No testnet USDC yet (balance $${bal}). Get 1 USDC on Base Sepolia from ${FAUCETS[0].url} for address ${address}, then run the same command again.`);
+    process.exitCode = 2;
+    return;
+  }
+  const r = await w.pay({ url: TESTNET_DEMO_URL, maxUsd: price, idempotencyKey: flags.key || undefined });
+  // On a duplicate, pay() records a new REFUSED receipt; the settlement tx lives on the prior payment named in the reason.
+  let rec = r.receiptId ? w.ledger.find(r.receiptId) : null;
+  if (r.code === 'DUPLICATE' && typeof r.reason === 'string') {
+    const m = r.reason.match(/receipt (r_[a-z0-9]+_[a-f0-9]+)/i);
+    if (m) rec = w.ledger.find(m[1]) || rec;
+  }
+  const tx = r.settlementTx || rec?.settlement?.transaction || null;
+  const summary = {
+    ok: Boolean(r.ok || (r.code === 'DUPLICATE' && tx)),
+    paid: r.code === 'DUPLICATE' ? true : r.paid,
+    status: r.code === 'DUPLICATE' ? 'ALREADY_PAID' : r.status,
+    reason: r.reason || null,
+    receiptId: rec?.id || r.receiptId || null,
+    amountUsd: r.amountUsd ?? rec?.amountUsd ?? price,
+    settlementTx: tx,
+    explorer: tx ? `${net.explorer}/tx/${tx}` : null,
+    httpStatus: r.httpStatus ?? rec?.http?.status ?? null,
+  };
+  out(summary);
+  if (tx) {
+    // Last line is the bare hash, so a first run ends by printing the tx hash.
+    console.log(tx);
+    process.exitCode = 0;
+    return;
+  }
+  process.exitCode = 3;
+}
+
 async function main() {
   const cmd = pos[0];
   if (!cmd || flags.help || cmd === 'help') return out(HELP);
   if (cmd === 'mcp') { await import('./mcp.mjs'); return; }
   if (cmd === 'demo') { const { runDemo } = await import('../examples/demo.mjs'); return runDemo(); }
+  if (cmd === 'try' || cmd === 'quickstart') return runTry();
 
   const h = home();
   if (cmd === 'init') {

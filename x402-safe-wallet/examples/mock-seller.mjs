@@ -12,6 +12,7 @@
 //   /expensive      $0.50  delivers JSON (to test the per-call cap)
 //   /credits/topup  $0.02  a credit top-up (to test the top-up guard)
 //   /multi          several payment options, only some usable (to test option choice)
+//   /flaky          $0.01  first unpaid request returns 502, then 402, then delivers (to test one unpaid 5xx retry)
 import http from 'node:http';
 import { verifyTypedData, getAddress } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
@@ -42,6 +43,7 @@ function routeTable(payTo) {
       ],
       deliver: () => [200, JSON.stringify({ data: 'multi ok' })],
     },
+    '/flaky': { accepts: [req(payTo, 0.01)], unpaid5xxOnce: 502, deliver: () => [200, JSON.stringify({ data: 'ok after unpaid retry' })] },
   };
 }
 
@@ -76,7 +78,14 @@ export function startMockSeller({ port = 4021, payTo, facilitator = null, log = 
     const resource = { url: `http://${rq.headers.host}${u.pathname}`, description: u.pathname === '/credits/topup' ? 'Buy prepaid credits' : 'Mock x402 resource', mimeType: 'application/json' };
     const pr = { x402Version: 2, error: 'Payment required', resource, accepts: route.accepts };
     const sig = rq.headers['payment-signature'];
-    if (!sig) { rs.writeHead(402, { 'content-type': 'application/json', 'payment-required': encodeB64Json(pr) }); return rs.end(JSON.stringify(pr)); }
+    if (!sig) {
+      if (route.unpaid5xxOnce && !route._unpaid5xxSent) {
+        route._unpaid5xxSent = true;
+        rs.writeHead(route.unpaid5xxOnce, { 'content-type': 'text/plain' });
+        return rs.end('bad gateway');
+      }
+      rs.writeHead(402, { 'content-type': 'application/json', 'payment-required': encodeB64Json(pr) }); return rs.end(JSON.stringify(pr));
+    }
     let payload; try { payload = decodeB64Json(sig); } catch { rs.writeHead(400); return rs.end('bad payment header'); }
     if (route.reject) { rs.writeHead(402, { 'content-type': 'application/json', 'payment-required': encodeB64Json({ ...pr, error: 'Verification error' }) }); return rs.end(JSON.stringify({ error: 'Verification error' })); }
     let settlement;
@@ -105,5 +114,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
   const s = await startMockSeller({ port: Number(arg('--port') || 4021), payTo: arg('--pay-to'), facilitator: arg('--facilitator'), log: console.log });
   console.log(`mock x402 seller on http://127.0.0.1:${s.port} (payTo ${s.payTo}, ${arg('--facilitator') ? `real settlement via ${arg('--facilitator')}` : 'simulated settlement, no chain'})`);
-  console.log('routes: /paid /empty /error /reject /expensive /credits/topup /multi');
+  console.log('routes: /paid /empty /error /reject /expensive /credits/topup /multi /flaky');
 }

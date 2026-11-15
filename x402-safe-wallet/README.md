@@ -4,6 +4,16 @@
 
 A full-service wallet tool for bots that need to get on-chain safely: create a dedicated wallet, prove it works on a testnet, build against a local x402 seller, and only then spend real USDC on [x402](https://x402.org/) APIs, inside limits a human sets.
 
+## Try it on Base Sepolia
+
+If you don't already have Base Sepolia USDC, get 1 USDC from the [Circle faucet](https://faucet.circle.com/) for the address the command prints, then run the same command again.
+
+```bash
+npx -y x402-safe-wallet try
+```
+
+That one command stays on the Base Sepolia testnet, creates a dedicated wallet if you don't have one, pays the public x402.org demo 0.01 testnet USDC, and ends by printing the settlement transaction hash. It allows x402.org for that call only and does not change your saved allowlist. It will not run against mainnet. Node.js 20 or newer is required. From a checkout, run `npm install` and then `node bin/cli.mjs try`. If it worked, [open an "I ran it" issue](https://github.com/travisjmurphy/loudtzu-actors-mcp/issues/new?template=i-ran-it.md) with that hash.
+
 It is one tool with four stages, available as a CLI and as an MCP server (stdio):
 
 1. **Onboard.** Create a fresh wallet, store the key safely, prove control, get funded.
@@ -38,6 +48,8 @@ Public reports from x402 buyers mostly describe a different problem than a missi
 | **Option choice** | When a 402 offers several ways to pay, only plain USDC EIP-3009 `exact` on the configured network is used, and the cheapest valid option wins. `x402_quote` shows why every other option was skipped. |
 
 ## Quickstart
+
+The shortest path is `npx -y x402-safe-wallet try` (see above). Step by step:
 
 ```bash
 npm install -g x402-safe-wallet      # or run from a checkout: node bin/cli.mjs <command>
