@@ -64,6 +64,10 @@ export async function signPayment(account, pr, req, net, nowSec = Math.floor(Dat
   const payload = version === 1
     ? { x402Version: 1, scheme: 'exact', network: req.network, payload: { signature, authorization: auth } }
     : { x402Version: version, ...(pr.resource ? { resource: pr.resource } : {}), accepted: req, payload: { signature, authorization: auth } };
+  // v2: echo PaymentRequired.extensions unchanged (x402 spec §5.1.2 / bazaar.md). Do not invent a field when the 402 had none.
+  if (version !== 1 && Object.prototype.hasOwnProperty.call(pr, 'extensions')) {
+    payload.extensions = structuredClone(pr.extensions);
+  }
   return { header: version === 1 ? 'X-PAYMENT' : 'PAYMENT-SIGNATURE', value: encodeB64Json(payload), payload, authorization: auth };
 }
 
