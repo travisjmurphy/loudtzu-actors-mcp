@@ -1,5 +1,7 @@
 # LOUDTZU Canada Data & Price Tools (MCP server)
 
+[![LOUDTZU Canada Data & Price Tools MCP server](https://mcprush.com/badge/loudtzu-canada-data-price-tools-mcp/card.svg)](https://mcprush.com/to/loudtzu-canada-data-price-tools-mcp?ref=badge)
+
 <!-- mcp-name: io.github.travisjmurphy/loudtzu-actors-mcp -->
 
 [![CI](https://github.com/travisjmurphy/loudtzu-actors-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/travisjmurphy/loudtzu-actors-mcp/actions/workflows/ci.yml)
